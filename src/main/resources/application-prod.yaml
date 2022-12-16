@@ -1,0 +1,48 @@
+spring:
+  rabbitmq:
+    password: 2CTrGZusn3R5gxT4LsJT75huwh5DI4YZ
+    username: cportal
+    port: 5672
+    host: prod-rabbit.mf.uz
+  datasource:
+    username: postgres
+    password: Shoxruh0912
+    url: jdbc:postgresql://localhost:5432/affiliation_shluz
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+  servlet:
+    multipart:
+      max-file-size: 100MB
+      max-request-size: 150MB
+      enabled: true
+      file-size-threshold: 2KB
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui
+    groups-order: asc
+    operations-sorter: alpha
+    try-it-out-enabled: true
+    tags-sorter: alpha
+    display-request-duration: true
+  api-docs:
+    path: /api/doc
+justice:
+  request:
+    json-rpc: 2.0
+    method: zags.check_family_ties_by_pins
+  api:
+    key: BBCFB00E-A8D2-4FE1-8175-304788AB52BE
+    base-url: http://10.190.24.138:7075
+
+etp:
+  rabbit:
+    consumer-queue-name: cportal_ant_in
+    publisher-exchange-name: common
+    publisher-routing-key-xt-xarid: xt.request
+    publisher-routing-key-uz-ex: uzexbek.request
+
+server:
+  port: ${APP_PORT:7000}
