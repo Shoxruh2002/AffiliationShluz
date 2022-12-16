@@ -1,17 +1,22 @@
-package uz.atm.dto.etp;
+package uz.atm.entity;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import jakarta.persistence.Entity;
 import lombok.AllArgsConstructor;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.ToString;
+import lombok.Setter;
 
 /**
  * Author: Shoxruh Bekpulatov
- * Time: 10/18/22 11:52 AM
+ * Time: 12/16/22 11:41 AM
  **/
+@Entity
+@Getter
+@Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class EtpResponseDto {
+public class EtpResponse extends Auditable {
 
     @JsonProperty("REQUEST_ID")
     public Long requestId;
@@ -26,21 +31,6 @@ public class EtpResponseDto {
     public String methodName;
 
     @JsonProperty("PAYLAOD")
-    public Payload paylaod;
-
-    @ToString
-    @AllArgsConstructor
-    public static class Payload {
-
-        @JsonProperty("BASE")
-        public Long base;
-
-        @JsonProperty("CHECK")
-        public Long check;
-
-        @JsonProperty("RESULT")
-        public Boolean result;
-
-    }
+    public String paylaod;
 
 }

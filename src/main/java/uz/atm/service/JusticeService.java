@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import uz.atm.dto.etp.EtpRequestDto;
 import uz.atm.dto.etp.EtpResponseDto;
@@ -19,7 +20,9 @@ import uz.atm.service.caller.JusticeCaller;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Function;
+import java.util.function.BiFunction;
+
+import static uz.atm.utils.BaseUtils.generateLongId;
 
 /**
  * Author: Shoxruh Bekpulatov
@@ -36,6 +39,10 @@ public class JusticeService {
     private final ResultService resultService;
     private final RabbitMqService rabbitMqService;
     private final JusticeRequestProperties justiceRequestProperties;
+    private final EtpResponseService etpResponseService;
+    private final EtpRequestService etpRequestService;
+    @Value("${request.id.file.path}")
+    private String getRequestFilePath;
 
     public void consume(JsonNode node) {
         try {
@@ -47,20 +54,22 @@ public class JusticeService {
     }
 
     public void sendJustice(EtpRequestDto etpRequestDto) {
+        etpRequestService.save(etpRequestDto);
         List<Long> base = etpRequestDto.payload.base;
         List<Long> check = etpRequestDto.payload.check;
         base.forEach(f -> {
             List<Long> tempCheck = new ArrayList<>(check);
             List<Result> dbResults = resultService.checkPinfls(f, check);
             List<Long> dbCheckPinfl = dbResults.stream().map(Result::getCheckPinfl).toList();
-            List<EtpResponseDto> etpResponseDtos = dbResults.stream().map(getEtpResponseDto).toList();
+            List<EtpResponseDto> etpResponseDtos = dbResults.stream().map(m -> getEtpResponseDto.apply(m, etpRequestDto)).toList();
+            etpResponseService.save(etpResponseDtos);
             rabbitMqService.sendResult(etpResponseDtos, etpRequestDto.etpId);
             dbCheckPinfl.forEach(tempCheck::remove);
 
             Optional<JusticeResponse> justiceResponse = justiceCaller.postCall(
                     new JusticeRequestDto(
                             justiceRequestProperties.getJsonRpc(), justiceRequestProperties.getId(), justiceRequestProperties.getMethod(),
-                            new JusticeRequestDto.Params(f, tempCheck)), "/", true);
+                            new JusticeRequestDto.Params(f, tempCheck)), "/");
             if (justiceResponse.isPresent()) {
                 JusticeResponse response = justiceResponse.get();
                 resultService.save(f, etpRequestDto.requestId, response.result);
@@ -68,15 +77,17 @@ public class JusticeService {
                         .entrySet()
                         .stream()
                         .map(m ->
-                                new EtpResponseDto(etpRequestDto.requestId, f, m.getKey(), m.getValue())
+                                new EtpResponseDto(etpRequestDto.requestId, etpRequestDto.etpId, generateLongId(getRequestFilePath), etpRequestDto.methodName,
+                                        new EtpResponseDto.Payload(f, m.getKey(), m.getValue()))
                         ).toList();
+                etpResponseService.save(etpResponseDtosFromJustica);
                 rabbitMqService.sendResult(etpResponseDtosFromJustica, etpRequestDto.etpId);
             }
         });
     }
 
-    private final Function<Result, EtpResponseDto> getEtpResponseDto = (result) ->
-            new EtpResponseDto(result.getRequestId(), result.getBasePinfl(), result.getCheckPinfl(), result.getResult());
+    private final BiFunction<Result, EtpRequestDto, EtpResponseDto> getEtpResponseDto = (result, requestDto) ->
+            new EtpResponseDto(requestDto.requestId, requestDto.etpId, generateLongId(getRequestFilePath), requestDto.methodName, new EtpResponseDto.Payload(result.getBasePinfl(), result.getCheckPinfl(), result.getResult()));
 
 
 }

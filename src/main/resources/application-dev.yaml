@@ -44,5 +44,9 @@ etp:
     publisher-routing-key-xt-xarid: xt.request
     publisher-routing-key-uz-ex: xt.request
 
+request:
+  id:
+    file:
+      path: /home/shoxruh/requestId.dat
 server:
   port: ${APP_PORT:7000}
