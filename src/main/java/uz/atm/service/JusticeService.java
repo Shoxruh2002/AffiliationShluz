@@ -41,19 +41,19 @@ public class JusticeService {
     private final JusticeRequestProperties justiceRequestProperties;
     private final EtpResponseService etpResponseService;
     private final EtpRequestService etpRequestService;
-    @Value("${request.id.file.path}")
+    @Value( "${request.id.file.path}" )
     private String getRequestFilePath;
 
-    public void consume(JsonNode node) {
+    public void consume(JsonNode node, String type) {
         try {
             EtpRequestDto etpRequestDto = objectMapper.readValue(node.toString(), EtpRequestDto.class);
-            this.sendJustice(etpRequestDto);
-        } catch (JsonProcessingException e) {
+            this.sendJustice(etpRequestDto, type);
+        } catch ( JsonProcessingException e ) {
             throw new JsonParserException(ExceptionUtils.getRootCauseMessage(e));
         }
     }
 
-    public void sendJustice(EtpRequestDto etpRequestDto) {
+    public void sendJustice(EtpRequestDto etpRequestDto, String type) {
         etpRequestService.save(etpRequestDto);
         List<Long> base = etpRequestDto.payload.base;
         List<Long> check = etpRequestDto.payload.check;
@@ -63,14 +63,14 @@ public class JusticeService {
             List<Long> dbCheckPinfl = dbResults.stream().map(Result::getCheckPinfl).toList();
             List<EtpResponseDto> etpResponseDtos = dbResults.stream().map(m -> getEtpResponseDto.apply(m, etpRequestDto)).toList();
             etpResponseService.save(etpResponseDtos);
-            rabbitMqService.sendResult(etpResponseDtos, etpRequestDto.etpId);
+            rabbitMqService.sendResult(etpResponseDtos, etpRequestDto.etpId, type);
             dbCheckPinfl.forEach(tempCheck::remove);
 
             Optional<JusticeResponse> justiceResponse = justiceCaller.postCall(
                     new JusticeRequestDto(
                             justiceRequestProperties.getJsonRpc(), justiceRequestProperties.getId(), justiceRequestProperties.getMethod(),
-                            new JusticeRequestDto.Params(f, tempCheck)), "/");
-            if (justiceResponse.isPresent()) {
+                            new JusticeRequestDto.Params(f, tempCheck)), "/", JusticeResponse.class);
+            if ( justiceResponse.isPresent() ) {
                 JusticeResponse response = justiceResponse.get();
                 resultService.save(f, etpRequestDto.requestId, response.result);
                 List<EtpResponseDto> etpResponseDtosFromJustica = response.result
@@ -81,7 +81,7 @@ public class JusticeService {
                                         new EtpResponseDto.Payload(f, m.getKey(), m.getValue()))
                         ).toList();
                 etpResponseService.save(etpResponseDtosFromJustica);
-                rabbitMqService.sendResult(etpResponseDtosFromJustica, etpRequestDto.etpId);
+                rabbitMqService.sendResult(etpResponseDtosFromJustica, etpRequestDto.etpId, type);
             }
         });
     }

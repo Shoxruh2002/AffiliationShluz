@@ -11,6 +11,7 @@ import lombok.ToString;
  **/
 @AllArgsConstructor
 @NoArgsConstructor
+@ToString
 public class EtpResponseDto {
 
     @JsonProperty("REQUEST_ID")

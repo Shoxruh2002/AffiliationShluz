@@ -26,7 +26,7 @@ public class JusticeController {
     @PostMapping("/check")
     public boolean check(@RequestBody EtpRequestDto dto) {
         try {
-            justiceService.sendJustice(dto);
+            justiceService.sendJustice(dto,"dev");
             return true;
         } catch (Exception e) {
             return false;

@@ -1,9 +1,4 @@
 spring:
-  rabbitmq:
-    host: localhost
-    port: 5672
-    username: guest
-    password: guest
   datasource:
     username: postgres
     password: Shoxruh0912
@@ -39,6 +34,16 @@ justice:
 
 etp:
   rabbit:
+    dev:
+      username: username
+      password: password
+      port: 5672
+      host: dev-rabbit.mf.uz
+    prod:
+      username: username
+      password: password
+      port: 5672
+      host: prod-rabbit.mf.uz
     consumer-queue-name: ant_test
     publisher-exchange-name: common
     publisher-routing-key-xt-xarid: xt.request
